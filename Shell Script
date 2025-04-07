@@ -1,0 +1,111 @@
+#!/bin/bash
+
+# Create PLINK files from VCF files for chromosomes 1-22
+for i in {1..22};
+do 
+plink --vcf /drives/drive1/kidney/Data_repository/phg001416.v1.NHGRI_eMERGE_III_HRC_Imputed_v2.genotype-calls-vcf.c1/chr${i}.dose.emerge_ids.consented.merged_c1.vcf.gz --make-bed --out /drives/drive1/kidney/Jazmin/plink_data/chr${i}.dose.emerge_ids.consented.merged_c1
+echo ${i}  
+done
+
+#Find duplicate SNPs in chromosomes
+awk '{print $2}' chr1.dose.emerge_ids.consented.merged_c1.bim | sort | uniq -d > duplicatesnps1
+awk '{print $2}' chr2.dose.emerge_ids.consented.merged_c1.bim | sort | uniq -d > duplicatesnps2
+awk '{print $2}' chr3.dose.emerge_ids.consented.merged_c1.bim | sort | uniq -d > duplicatesnps3
+awk '{print $2}' chr4.dose.emerge_ids.consented.merged_c1.bim | sort | uniq -d > duplicatesnps4
+awk '{print $2}' chr5.dose.emerge_ids.consented.merged_c1.bim | sort | uniq -d > duplicatesnps5
+awk '{print $2}' chr6.dose.emerge_ids.consented.merged_c1.bim | sort | uniq -d > duplicatesnps6
+awk '{print $2}' chr7.dose.emerge_ids.consented.merged_c1.bim | sort | uniq -d > duplicatesnps7
+awk '{print $2}' chr8.dose.emerge_ids.consented.merged_c1.bim | sort | uniq -d > duplicatesnps8
+awk '{print $2}' chr9.dose.emerge_ids.consented.merged_c1.bim | sort | uniq -d > duplicatesnps9
+awk '{print $2}' chr10.dose.emerge_ids.consented.merged_c1.bim | sort | uniq -d > duplicatesnps10
+awk '{print $2}' chr11.dose.emerge_ids.consented.merged_c1.bim | sort | uniq -d > duplicatesnps11
+awk '{print $2}' chr12.dose.emerge_ids.consented.merged_c1.bim | sort | uniq -d > duplicatesnps12
+awk '{print $2}' chr13.dose.emerge_ids.consented.merged_c1.bim | sort | uniq -d > duplicatesnps13
+awk '{print $2}' chr14.dose.emerge_ids.consented.merged_c1.bim | sort | uniq -d > duplicatesnps14
+awk '{print $2}' chr15.dose.emerge_ids.consented.merged_c1.bim | sort | uniq -d > duplicatesnps15
+awk '{print $2}' chr16.dose.emerge_ids.consented.merged_c1.bim | sort | uniq -d > duplicatesnps16
+awk '{print $2}' chr17.dose.emerge_ids.consented.merged_c1.bim | sort | uniq -d > duplicatesnps17
+awk '{print $2}' chr18.dose.emerge_ids.consented.merged_c1.bim | sort | uniq -d > duplicatesnps18
+awk '{print $2}' chr19.dose.emerge_ids.consented.merged_c1.bim | sort | uniq -d > duplicatesnps19
+awk '{print $2}' chr20.dose.emerge_ids.consented.merged_c1.bim | sort | uniq -d > duplicatesnps20
+awk '{print $2}' chr21.dose.emerge_ids.consented.merged_c1.bim | sort | uniq -d > duplicatesnps21
+awk '{print $2}' chr22.dose.emerge_ids.consented.merged_c1.bim | sort | uniq -d > duplicatesnps22
+
+#Exclude the duplicate SNPs
+for i in {1..22};
+do
+plink --bfile /drives/drive1/kidney/Jazmin/plink_data/chr${i}.dose.emerge_ids.consented.merged_c1 --exclude duplicatesnps${i} --make-bed --out /drives/drive1/kidney/Jazmin/plink_data/chr${i}nobi
+echo ${i}  
+done
+
+#Keep sample IDs of interest from cohort in Markdown file (lines 32-37)
+for i in {1..22};
+do 
+plink --bfile /drives/drive1/kidney/Jazmin/plink_data/chr${i}nobi --keep /drives/drive1/kidney/Jazmin/plink_data/sampleid.txt --make-bed --out /drives/drive1/kidney/Jazmin/plink_data/chr${i}nb
+echo ${i}  
+done
+
+#Create a merge list text file of chromosomes 2-22 w their respective trio of files 
+for i in {2..22}; do 
+echo "chr${i}nb.bed chr${i}nb.bim chr${i}nb.fam"
+done > merge-list.txt
+
+#Merge chromosomes 1-22 using Merge list text file 
+plink --bfile /drives/drive1/kidney/Jazmin/plink_data/chr1nb --merge-list /drives/drive1/kidney/Jazmin/plink_data/merge-list.txt --make-bed --threads 15 --out /drives/drive1/kidney/Jazmin/plink_data/chrmerged
+
+#Filter PLINK files for variants with subject IDs of interest from the batch filter with R-squared >= 0.7 text file created in Markdown file (lines 40-178)
+plink --extract FV.txt --bfile /drives/drive1/kidney/Jazmin/plink_data/chrmerged --make-bed --out /drives/drive1/kidney/Jazmin/plink_data/chrmergedbf
+
+#Filter out samples with >5% missing calls
+plink2 --bfile /drives/drive1/kidney/Jazmin/plink_data/chrmergedbf --mind 0.05 --make-bed --out /drives/drive1/kidney/Jazmin/plink_data/chrcompletepeople
+
+#filter out variants with >1% missing calls
+plink2 --bfile /drives/drive1/kidney/Jazmin/plink_data/chrcompletepeople --geno 0.01 --write-snplist --out /drives/drive1/kidney/Jazmin/plink_data/chrSNPstokeep
+
+#Create new genotype file set that has all SNPs we're keeping
+plink2 --bfile /drives/drive1/kidney/Jazmin/plink_data/chrcompletepeople --extract /drives/drive1/kidney/Jazmin/plink_data/chrSNPstokeep.snplist --make-bed --out /drives/drive1/kidney/Jazmin/plink_data/chr.completeSNPSandppl
+
+#Calculate minor allele frequency (MAF) report
+plink --bfile /drives/drive1/kidney/Jazmin/plink_data/chr.completeSNPSandppl --freq --out /drives/drive1/kidney/Jazmin/plink_data/chr.completeSNPSandppl
+
+#Filter out variants with MAF>0.01
+plink --bfile /drives/drive1/kidney/Jazmin/plink_data/chr.completeSNPSandppl --maf 0.01 --make-bed --out /drives/drive1/kidney/Jazmin/plink_data/chr.completeSNPSandppl.maf01
+
+#Calulcate observed and expected autosomal homozygous genotype counts
+plink --bfile /drives/drive1/kidney/Jazmin/plink_data/chr.completeSNPSandppl.maf01 --het --make-bed --out /drives/drive1/kidney/Jazmin/plink_data/chr.completeSNPSandppl.maf01
+
+#Keep variants with a heterozygosity rate greater than or equal to 0.25 from text file created in Markdown (lines 180-189)
+plink --bfile /drives/drive1/kidney/Jazmin/plink_data/chr.completeSNPSandppl.maf01 --keep /drives/drive1/kidney/Jazmin/plink_data/chr.het25.samples --make-bed --out /drives/drive1/kidney/Jazmin/plink_data/chr.posthr
+
+#Calculate Hardy Weinberg for variants with a p-value > 1e-6
+plink --bfile /drives/drive1/kidney/Jazmin/plink_data/chr.posthr --pheno /drives/drive1/kidney/Jazmin/plink_data/chrphenotypes.txt --hwe 1e-6 --make-bed --out /drives/drive1/kidney/Jazmin/plink_data/chr.postQC
+
+#Using a phenotype file created in Markdown (lines (191-203) complete a basic association test disregarding sex
+plink --bfile /drives/drive1/kidney/Jazmin/plink_data/chr.postQC --pheno /drives/drive1/kidney/Jazmin/plink_data/chrphenotypes.txt --allow-no-sex --assoc --out /drives/drive1/kidney/Jazmin/plink_data/chr.postgwas
+
+#Extract principal components 1-3
+plink --bfile /drives/drive1/kidney/Jazmin/plink_data/chr.postQC --pca 3 --out /drives/drive1/kidney/Jazmin/plink_data/chr.pca
+
+#Using a phenotype file created in Markdown (lines (191-203) and a covariate created in Markdown (lines 229-246) complete a logistic regression disregarding sex
+plink --bfile /drives/drive1/kidney/Jazmin/plink_data/chr.postQC --pheno /drives/drive1/kidney/Jazmin/plink_data/chrphenotypes.txt --allow-no-sex --logistic --covar /drives/drive1/kidney/Jazmin/plink_data/chrcovar.txt --covar-name Sex,Age,PC1,PC2,PC3 --out /drives/drive1/kidney/Jazmin/plink_data/chr.gwas.covar
+
+#Calculate polygenic risk scores from a polygenic risk score file created in Markdown (lines (296-299)
+plink --bfile /drives/drive1/kidney/Jazmin/plink_data/chr.postQC --pheno /drives/drive1/kidney/Jazmin/plink_data/chrphenotypes.txt --score /drives/drive1/kidney/Jazmin/plink_data/prsfile.txt 1 2 3  --out /drives/drive1/kidney/Jazmin/plink_data/chr.prs
+
+#Locate possible variables in gene regions of interest within GPX family
+#Gene Region: GPX1
+plink --bfile /drives/drive1/kidney/Jazmin/plink_data/chr.postQC --chr 3 --from-kb 49357176 --to-kb 49358353 --make-bed --out /drives/drive1/kidney/Jazmin/plink_data/GPX1
+#Gene Region: GPX2
+plink --bfile /drives/drive1/kidney/Jazmin/plink_data/chr.postQC --chr 14 --from-kb 64939158 --to-kb  64942745 --make-bed --out /drives/drive1/kidney/Jazmin/plink_data/GPX2
+#Gene Region: GPX3
+plink --bfile /drives/drive1/kidney/Jazmin/plink_data/chr.postQC --chr 5 --from-kb 151020591 --to-kb 151028988 --make-bed --out /drives/drive1/kidney/Jazmin/plink_data/GPX3
+#Gene Region: GPX4
+plink --bfile /drives/drive1/kidney/Jazmin/plink_data/chr.postQC --chr 19 --from-kb 1103994 --to-kb 1106779 --make-bed --out /drives/drive1/kidney/Jazmin/plink_data/GPX4
+#Gene Region: GPX5
+plink --bfile /drives/drive1/kidney/Jazmin/plink_data/chr.postQC --chr 6 --from-kb 28525881 --to-kb 28534955 --make-bed --out /drives/drive1/kidney/Jazmin/plink_data/GPX5
+#Gene Region: GPX6
+plink --bfile /drives/drive1/kidney/Jazmin/plink_data/chr.postQC --chr 6 --from-kb 28503296 --to-kb 28515793 --make-bed --out /drives/drive1/kidney/Jazmin/plink_data/GPX6
+#Gene Region: GPX7
+plink --bfile /drives/drive1/kidney/Jazmin/plink_data/chr.postQC --chr 1 --from-kb 52602371 --to-kb 52609051 --make-bed --out /drives/drive1/kidney/Jazmin/plink_data/GPX7
+#Gene Region: GPX8
+plink --bfile /drives/drive1/kidney/Jazmin/plink_data/chr.postQC --chr 5 --from-kb 55160171 --to-kb 55167297 --make-bed --out /drives/drive1/kidney/Jazmin/plink_data/GPX8

@@ -1,0 +1,332 @@
+library(tidyverse)
+library(ggplot2)
+library(lattice)
+library(plink)
+library(readr)
+library(dplyr)
+library(vcfR)
+library(data.table)
+library(qqman)
+library(tidyr)
+library(ggrepel)
+
+#set working directory to repository where orginial retrieved data was placed
+setwd("/drives/drive1/kidney/Data_repository/")
+
+#CaseControls
+CaseControlData=read.table("/drives/drive1/kidney/Data_repository/phs001584.v2.pht009072.v2.p2.c1.eMERGE_III_HRC_CaseControl.GRU.txt", header=TRUE, sep="\t")
+
+#Demographics 
+DemographicsData<-read.table("/drives/drive1/kidney/Data_repository/phs001584.v2.pht010215.v1.p2.c1.eMERGE_III_HRC_Demographics.GRU.txt", header=TRUE, sep="\t")
+
+#Merge two data sets by subject ID
+combined = merge(CaseControlData,DemographicsData,
+                 by="SUBJECT_ID")
+
+#Combined for Hispanic/Latino & Non-Hispanic/Latino    
+HCohortCombined=filter(combined, ETHNICITY.x=="C17459" | ETHNICITY.x=="C41222")
+
+#Filtered for Phenotype (Case) of Interest: CKD Case & CKD Control
+CKDCohort=filter(HCohortCombined, CASE_CONTROL_CKD=="C99269" | CASE_CONTROL_CKD=="C99270")
+
+#Select subject IDs from cohort and transform into a PLINK readable text file
+sampleID<- CKDCohort %>% select(SUBJECT_ID)
+sampleID<- sampleID %>% rename(IID=SUBJECT_ID)
+sampleID$FID=0
+sampleID<- sampleID %>% select(FID, IID)
+fwrite(sampleID, "/drives/drive1/kidney/Jazmin/plink_data/sampleid.txt",sep="\t", col.names=F)
+
+#Read in all of chromosome imputation variant by batch file 
+Variant1=read.table("/drives/drive1/kidney/Data_repository/phg001416.v1.NHGRI_eMERGE_III_HRC_Imputed_v2.genotype-qc.MULTI/phg001214.v1.NHGRI_eMERGE_III_HRC_Imputed.genotype-qc.MULTI/variant_batch_info_files/chr1.merged_imputation_variant_Rsq_by_batches.info.gz", header = T)
+Variant2=read.table("/drives/drive1/kidney/Data_repository/phg001416.v1.NHGRI_eMERGE_III_HRC_Imputed_v2.genotype-qc.MULTI/phg001214.v1.NHGRI_eMERGE_III_HRC_Imputed.genotype-qc.MULTI/variant_batch_info_files/chr2.merged_imputation_variant_Rsq_by_batches.info.gz", header = T)
+Variant3=read.table("/drives/drive1/kidney/Data_repository/phg001416.v1.NHGRI_eMERGE_III_HRC_Imputed_v2.genotype-qc.MULTI/phg001214.v1.NHGRI_eMERGE_III_HRC_Imputed.genotype-qc.MULTI/variant_batch_info_files/chr3.merged_imputation_variant_Rsq_by_batches.info.gz", header = T)
+Variant4=read.table("/drives/drive1/kidney/Data_repository/phg001416.v1.NHGRI_eMERGE_III_HRC_Imputed_v2.genotype-qc.MULTI/phg001214.v1.NHGRI_eMERGE_III_HRC_Imputed.genotype-qc.MULTI/variant_batch_info_files/chr4.merged_imputation_variant_Rsq_by_batches.info.gz", header = T)
+Variant5=read.table("/drives/drive1/kidney/Data_repository/phg001416.v1.NHGRI_eMERGE_III_HRC_Imputed_v2.genotype-qc.MULTI/phg001214.v1.NHGRI_eMERGE_III_HRC_Imputed.genotype-qc.MULTI/variant_batch_info_files/chr5.merged_imputation_variant_Rsq_by_batches.info.gz", header = T)
+Variant6=read.table("/drives/drive1/kidney/Data_repository/phg001416.v1.NHGRI_eMERGE_III_HRC_Imputed_v2.genotype-qc.MULTI/phg001214.v1.NHGRI_eMERGE_III_HRC_Imputed.genotype-qc.MULTI/variant_batch_info_files/chr6.merged_imputation_variant_Rsq_by_batches.info.gz", header = T)
+Variant7=read.table("/drives/drive1/kidney/Data_repository/phg001416.v1.NHGRI_eMERGE_III_HRC_Imputed_v2.genotype-qc.MULTI/phg001214.v1.NHGRI_eMERGE_III_HRC_Imputed.genotype-qc.MULTI/variant_batch_info_files/chr7.merged_imputation_variant_Rsq_by_batches.info.gz", header = T)
+Variant8=read.table("/drives/drive1/kidney/Data_repository/phg001416.v1.NHGRI_eMERGE_III_HRC_Imputed_v2.genotype-qc.MULTI/phg001214.v1.NHGRI_eMERGE_III_HRC_Imputed.genotype-qc.MULTI/variant_batch_info_files/chr8.merged_imputation_variant_Rsq_by_batches.info.gz", header = T)
+Variant9=read.table("/drives/drive1/kidney/Data_repository/phg001416.v1.NHGRI_eMERGE_III_HRC_Imputed_v2.genotype-qc.MULTI/phg001214.v1.NHGRI_eMERGE_III_HRC_Imputed.genotype-qc.MULTI/variant_batch_info_files/chr9.merged_imputation_variant_Rsq_by_batches.info.gz", header = T)
+Variant10=read.table("/drives/drive1/kidney/Data_repository/phg001416.v1.NHGRI_eMERGE_III_HRC_Imputed_v2.genotype-qc.MULTI/phg001214.v1.NHGRI_eMERGE_III_HRC_Imputed.genotype-qc.MULTI/variant_batch_info_files/chr10.merged_imputation_variant_Rsq_by_batches.info.gz", header = T)
+Variant11=read.table("/drives/drive1/kidney/Data_repository/phg001416.v1.NHGRI_eMERGE_III_HRC_Imputed_v2.genotype-qc.MULTI/phg001214.v1.NHGRI_eMERGE_III_HRC_Imputed.genotype-qc.MULTI/variant_batch_info_files/chr11.merged_imputation_variant_Rsq_by_batches.info.gz", header = T)
+Variant12=read.table("/drives/drive1/kidney/Data_repository/phg001416.v1.NHGRI_eMERGE_III_HRC_Imputed_v2.genotype-qc.MULTI/phg001214.v1.NHGRI_eMERGE_III_HRC_Imputed.genotype-qc.MULTI/variant_batch_info_files/chr12.merged_imputation_variant_Rsq_by_batches.info.gz", header = T)
+Variant13=read.table("/drives/drive1/kidney/Data_repository/phg001416.v1.NHGRI_eMERGE_III_HRC_Imputed_v2.genotype-qc.MULTI/phg001214.v1.NHGRI_eMERGE_III_HRC_Imputed.genotype-qc.MULTI/variant_batch_info_files/chr13.merged_imputation_variant_Rsq_by_batches.info.gz", header = T)
+Variant14=read.table("/drives/drive1/kidney/Data_repository/phg001416.v1.NHGRI_eMERGE_III_HRC_Imputed_v2.genotype-qc.MULTI/phg001214.v1.NHGRI_eMERGE_III_HRC_Imputed.genotype-qc.MULTI/variant_batch_info_files/chr14.merged_imputation_variant_Rsq_by_batches.info.gz", header = T)
+Variant15=read.table("/drives/drive1/kidney/Data_repository/phg001416.v1.NHGRI_eMERGE_III_HRC_Imputed_v2.genotype-qc.MULTI/phg001214.v1.NHGRI_eMERGE_III_HRC_Imputed.genotype-qc.MULTI/variant_batch_info_files/chr15.merged_imputation_variant_Rsq_by_batches.info.gz", header = T)
+Variant16=read.table("/drives/drive1/kidney/Data_repository/phg001416.v1.NHGRI_eMERGE_III_HRC_Imputed_v2.genotype-qc.MULTI/phg001214.v1.NHGRI_eMERGE_III_HRC_Imputed.genotype-qc.MULTI/variant_batch_info_files/chr16.merged_imputation_variant_Rsq_by_batches.info.gz", header = T)
+Variant17=read.table("/drives/drive1/kidney/Data_repository/phg001416.v1.NHGRI_eMERGE_III_HRC_Imputed_v2.genotype-qc.MULTI/phg001214.v1.NHGRI_eMERGE_III_HRC_Imputed.genotype-qc.MULTI/variant_batch_info_files/chr17.merged_imputation_variant_Rsq_by_batches.info.gz", header = T)
+Variant18=read.table("/drives/drive1/kidney/Data_repository/phg001416.v1.NHGRI_eMERGE_III_HRC_Imputed_v2.genotype-qc.MULTI/phg001214.v1.NHGRI_eMERGE_III_HRC_Imputed.genotype-qc.MULTI/variant_batch_info_files/chr18.merged_imputation_variant_Rsq_by_batches.info.gz", header = T)
+Variant19=read.table("/drives/drive1/kidney/Data_repository/phg001416.v1.NHGRI_eMERGE_III_HRC_Imputed_v2.genotype-qc.MULTI/phg001214.v1.NHGRI_eMERGE_III_HRC_Imputed.genotype-qc.MULTI/variant_batch_info_files/chr19.merged_imputation_variant_Rsq_by_batches.info.gz", header = T)
+Variant20=read.table("/drives/drive1/kidney/Data_repository/phg001416.v1.NHGRI_eMERGE_III_HRC_Imputed_v2.genotype-qc.MULTI/phg001214.v1.NHGRI_eMERGE_III_HRC_Imputed.genotype-qc.MULTI/variant_batch_info_files/chr20.merged_imputation_variant_Rsq_by_batches.info.gz", header = T)
+Variant21=read.table("/drives/drive1/kidney/Data_repository/phg001416.v1.NHGRI_eMERGE_III_HRC_Imputed_v2.genotype-qc.MULTI/phg001214.v1.NHGRI_eMERGE_III_HRC_Imputed.genotype-qc.MULTI/variant_batch_info_files/chr21.merged_imputation_variant_Rsq_by_batches.info.gz", header = T)
+Variant22=read.table("/drives/drive1/kidney/Data_repository/phg001416.v1.NHGRI_eMERGE_III_HRC_Imputed_v2.genotype-qc.MULTI/phg001214.v1.NHGRI_eMERGE_III_HRC_Imputed.genotype-qc.MULTI/variant_batch_info_files/chr22.merged_imputation_variant_Rsq_by_batches.info.gz", header = T)
+
+#Filter for variants with an R-squared value greater than or equal to 0.7
+FilteredVariant1<- Variant1 %>% filter(across(everything(), ~. >=0.7))
+FilteredVariant2<- Variant2 %>% filter(across(everything(), ~. >=0.7))
+FilteredVariant3<- Variant3 %>% filter(across(everything(), ~. >=0.7))
+FilteredVariant4<- Variant4 %>% filter(across(everything(), ~. >=0.7))
+FilteredVariant5<- Variant5 %>% filter(across(everything(), ~. >=0.7))
+FilteredVariant6<- Variant6 %>% filter(across(everything(), ~. >=0.7))
+FilteredVariant7<- Variant7 %>% filter(across(everything(), ~. >=0.7))
+FilteredVariant8<- Variant8 %>% filter(across(everything(), ~. >=0.7))
+FilteredVariant9<- Variant9 %>% filter(across(everything(), ~. >=0.7))
+FilteredVariant10<- Variant10 %>% filter(across(everything(), ~. >=0.7))
+FilteredVariant11<- Variant11 %>% filter(across(everything(), ~. >=0.7))
+FilteredVariant12<- Variant12 %>% filter(across(everything(), ~. >=0.7))
+FilteredVariant13<- Variant13 %>% filter(across(everything(), ~. >=0.7))
+FilteredVariant14<- Variant14 %>% filter(across(everything(), ~. >=0.7))
+FilteredVariant15<- Variant15 %>% filter(across(everything(), ~. >=0.7))
+FilteredVariant16<- Variant16 %>% filter(across(everything(), ~. >=0.7))
+FilteredVariant17<- Variant17 %>% filter(across(everything(), ~. >=0.7))
+FilteredVariant18<- Variant18 %>% filter(across(everything(), ~. >=0.7))
+FilteredVariant19<- Variant19 %>% filter(across(everything(), ~. >=0.7))
+FilteredVariant20<- Variant20 %>% filter(across(everything(), ~. >=0.7))
+FilteredVariant21<- Variant21 %>% filter(across(everything(), ~. >=0.7))
+FilteredVariant22<- Variant22 %>% filter(across(everything(), ~. >=0.7))
+
+#Prepare the filtered variants into a PLINK readable text file
+FV1<- FilteredVariant1 %>% select(Chr.Pos.Minor_Allele)
+FVar1 <- substr(FV1$Chr.Pos.Minor_Allele, 1, nchar(FV1$Chr.Pos.Minor_Allele)-2)
+FiVar1<- data.frame(Chr.Pos.Minor_Allele=FVar1)
+
+FV2<- FilteredVariant2 %>% select(Chr.Pos.Minor_Allele)
+FVar2 <- substr(FV2$Chr.Pos.Minor_Allele, 1, nchar(FV2$Chr.Pos.Minor_Allele)-2)
+FiVar2<- data.frame(Chr.Pos.Minor_Allele=FVar2)
+
+FV3<- FilteredVariant3 %>% select(Chr.Pos.Minor_Allele)
+FVar3<- substr(FV3$Chr.Pos.Minor_Allele, 1, nchar(FV3$Chr.Pos.Minor_Allele)-2)
+FiVar3<- data.frame(Chr.Pos.Minor_Allele=FVar3)
+
+FV4<- FilteredVariant4 %>% select(Chr.Pos.Minor_Allele)
+FVar4<- substr(FV4$Chr.Pos.Minor_Allele, 1, nchar(FV4$Chr.Pos.Minor_Allele)-2)
+FiVar4<- data.frame(Chr.Pos.Minor_Allele=FVar4)
+
+FV5<- FilteredVariant5 %>% select(Chr.Pos.Minor_Allele)
+FVar5<- substr(FV5$Chr.Pos.Minor_Allele, 1, nchar(FV5$Chr.Pos.Minor_Allele)-2)
+FiVar5<- data.frame(Chr.Pos.Minor_Allele=FVar5)
+
+FV6<- FilteredVariant6 %>% select(Chr.Pos.Minor_Allele)
+FVar6<- substr(FV6$Chr.Pos.Minor_Allele, 1, nchar(FV6$Chr.Pos.Minor_Allele)-2)
+FiVar6<- data.frame(Chr.Pos.Minor_Allele=FVar6)
+
+FV7<- FilteredVariant7 %>% select(Chr.Pos.Minor_Allele)
+FVar7<- substr(FV7$Chr.Pos.Minor_Allele, 1, nchar(FV7$Chr.Pos.Minor_Allele)-2)
+FiVar7<- data.frame(Chr.Pos.Minor_Allele=FVar7)
+
+FV8<- FilteredVariant8 %>% select(Chr.Pos.Minor_Allele)
+FVar8<- substr(FV8$Chr.Pos.Minor_Allele, 1, nchar(FV8$Chr.Pos.Minor_Allele)-2)
+FiVar8<- data.frame(Chr.Pos.Minor_Allele=FVar8)
+
+FV9<- FilteredVariant9 %>% select(Chr.Pos.Minor_Allele)
+FVar9<- substr(FV9$Chr.Pos.Minor_Allele, 1, nchar(FV9$Chr.Pos.Minor_Allele)-2)
+FiVar9<- data.frame(Chr.Pos.Minor_Allele=FVar9)
+
+FV10<- FilteredVariant10 %>% select(Chr.Pos.Minor_Allele)
+FVar10<- substr(FV10$Chr.Pos.Minor_Allele, 1, nchar(FV10$Chr.Pos.Minor_Allele)-2)
+FiVar10<- data.frame(Chr.Pos.Minor_Allele=FVar10)
+
+FV11<- FilteredVariant11 %>% select(Chr.Pos.Minor_Allele)
+FVar11<- substr(FV11$Chr.Pos.Minor_Allele, 1, nchar(FV11$Chr.Pos.Minor_Allele)-2)
+FiVar11<- data.frame(Chr.Pos.Minor_Allele=FVar11)
+
+FV12<- FilteredVariant12 %>% select(Chr.Pos.Minor_Allele)
+FVar12<- substr(FV12$Chr.Pos.Minor_Allele, 1, nchar(FV12$Chr.Pos.Minor_Allele)-2)
+FiVar12<- data.frame(Chr.Pos.Minor_Allele=FVar12)
+
+FV13<- FilteredVariant13 %>% select(Chr.Pos.Minor_Allele)
+FVar13<- substr(FV13$Chr.Pos.Minor_Allele, 1, nchar(FV13$Chr.Pos.Minor_Allele)-2)
+FiVar13<- data.frame(Chr.Pos.Minor_Allele=FVar13)
+
+FV14<- FilteredVariant14 %>% select(Chr.Pos.Minor_Allele)
+FVar14<- substr(FV14$Chr.Pos.Minor_Allele, 1, nchar(FV14$Chr.Pos.Minor_Allele)-2)
+FiVar14<- data.frame(Chr.Pos.Minor_Allele=FVar14)
+
+FV15<- FilteredVariant15 %>% select(Chr.Pos.Minor_Allele)
+FVar15<- substr(FV15$Chr.Pos.Minor_Allele, 1, nchar(FV15$Chr.Pos.Minor_Allele)-2)
+FiVar15<- data.frame(Chr.Pos.Minor_Allele=FVar15)
+
+FV16<- FilteredVariant16 %>% select(Chr.Pos.Minor_Allele)
+FVar16<- substr(FV16$Chr.Pos.Minor_Allele, 1, nchar(FV16$Chr.Pos.Minor_Allele)-2)
+FiVar16<- data.frame(Chr.Pos.Minor_Allele=FVar16)
+
+FV17<- FilteredVariant17 %>% select(Chr.Pos.Minor_Allele)
+FVar17<- substr(FV17$Chr.Pos.Minor_Allele, 1, nchar(FV17$Chr.Pos.Minor_Allele)-2)
+FiVar17<- data.frame(Chr.Pos.Minor_Allele=FVar17)
+
+FV18<- FilteredVariant18 %>% select(Chr.Pos.Minor_Allele)
+FVar18<- substr(FV18$Chr.Pos.Minor_Allele, 1, nchar(FV18$Chr.Pos.Minor_Allele)-2)
+FiVar18<- data.frame(Chr.Pos.Minor_Allele=FVar18)
+
+FV19<- FilteredVariant19 %>% select(Chr.Pos.Minor_Allele)
+FVar19<- substr(FV19$Chr.Pos.Minor_Allele, 1, nchar(FV19$Chr.Pos.Minor_Allele)-2)
+FiVar19<- data.frame(Chr.Pos.Minor_Allele=FVar19)
+
+FV20<- FilteredVariant20 %>% select(Chr.Pos.Minor_Allele)
+FVar20<- substr(FV20$Chr.Pos.Minor_Allele, 1, nchar(FV20$Chr.Pos.Minor_Allele)-2)
+FiVar20<- data.frame(Chr.Pos.Minor_Allele=FVar20)
+
+FV21<- FilteredVariant21 %>% select(Chr.Pos.Minor_Allele)
+FVar21<- substr(FV21$Chr.Pos.Minor_Allele, 1, nchar(FV21$Chr.Pos.Minor_Allele)-2)
+FiVar21<- data.frame(Chr.Pos.Minor_Allele=FVar21)
+
+FV22<- FilteredVariant22 %>% select(Chr.Pos.Minor_Allele)
+FVar22<- substr(FV22$Chr.Pos.Minor_Allele, 1, nchar(FV22$Chr.Pos.Minor_Allele)-2)
+FiVar22<- data.frame(Chr.Pos.Minor_Allele=FVar22)
+
+#Bind all of the variants to convert into one PLINK readable text file
+FV<- rbind(FiVar1, FiVar2, FiVar3, FiVar4, FiVar5, FiVar6,FiVar7, FiVar8, FiVar9, FiVar10, FiVar11, FiVar12, FiVar13, FiVar14, FiVar15, FiVar16, FiVar17, FiVar18, FiVar19, FiVar20, FiVar21, FiVar22)
+fwrite(FV, "/drives/drive1/kidney/Jazmin/plink_data/FV.txt", sep="\t", quote=FALSE, col.names = F)
+
+#Calculating heterozygosity
+#Read in .het file created in shell script (line 75)
+het<- read.table("/drives/drive1/kidney/Jazmin/plink_data/chr.completeSNPSandppl.maf01.het", sep="", header = T)
+
+#Calcualte heterozygosity rates and keep those greater than or equal to 0.25
+het$hetrate<-(het$N.NM.-het$O.HOM.)/het$N.NM
+het1.2<-het[which(het$hetrate>=0.25),]
+
+#Write first two columns: FID, IID, without a header into a PLINK readable file 
+write.table(het1.2[,1:2], "/drives/drive1/kidney/Jazmin/plink_data/chr.het25.samples", sep="\t", col.names = F, row.names = F, quote = F)
+
+#Phenotypes
+chrpostqc<- fread("/drives/drive1/kidney/Jazmin/plink_data/chr.postQC.fam", header=F)
+chrpostqc<- chrpostqc %>% rename(SUBJECT_ID=V2)
+chrpheno<- merge(CKDCohort, chrpostqc, by="SUBJECT_ID")
+chrpheno.txt<- chrpheno %>% select(SUBJECT_ID, CASE_CONTROL_CKD)
+chrphenotypes.txt<- chrpheno.txt %>% mutate(Pheno=case_when(
+    CASE_CONTROL_CKD=="C99270" ~ 1,
+    CASE_CONTROL_CKD=="C99269" ~ 2
+  ))
+chrphenotypes.txt$CASE_CONTROL_CKD <- 0
+chrphenotypes.txt<- chrphenotypes.txt %>% rename(FID=CASE_CONTROL_CKD, IID=SUBJECT_ID, Phenotype=Pheno)
+chrphenotypes.txt<- chrphenotypes.txt %>% select(FID, IID, Phenotype)
+fwrite(chrphenotypes.txt, "/drives/drive1/kidney/Jazmin/plink_data/chrphenotypes.txt",sep="\t", col.names=F)
+
+#Plot GWAS results
+chrgwas<- fread("/drives/drive1/kidney/Jazmin/plink_data/chr.postgwas.assoc", header=T)
+gwasresults<- na.omit(chrgwas)
+#Create a manhattan plot
+png("/drives/drive1/kidney/Jazmin/plink_data/GWAS_HispanicLatino_NonHispanicLatino.png")
+manhattan(gwasresults, chr="CHR", bp="BP", snp="SNP", p="P", col=c("blue4", "hotpink1", "chartreuse1", "magenta2",  "red2", "lightblue4", "salmon4", "darkorange1", "cyan1", "tomato1", "seagreen", "darkorchid1", "yellow1", "dodgerblue3", "plum1", "deeppink", "firebrick4", "burlywood3", "azure4", "maroon", "cadetblue1", "olivedrab", "red4"), logp = T, ylim=c(0, max(-log10(gwasresults$P), na.rm = T) +1 ))
+dev.off()
+#Create a manhattan plot with p-values included
+png("/drives/drive1/kidney/Jazmin/plink_data/GWAS_HispanicLatino_NonHispanicLatinoPVal.png")
+manhattan(gwasresults, chr="CHR", bp="BP", snp="SNP", p="P", col=c("blue4", "hotpink1", "chartreuse1", "magenta2",  "red2", "lightblue4", "salmon4", "darkorange1", "cyan1", "tomato1", "seagreen", "darkorchid1", "yellow1", "dodgerblue3", "plum1", "deeppink", "firebrick4", "burlywood3", "azure4", "maroon", "cadetblue1", "olivedrab", "red4"), logp = T, ylim=c(0, max(-log10(gwasresults$P), na.rm = T) +1 ), annotatePval =0.01)
+dev.off()
+
+#Create a QQ plot of the GWAS results
+png("/drives/drive1/kidney/Jazmin/plink_data/QQPlot_GWAS_HispanicLatino_NonHispanicLatino.png")
+qq(gwasresults$P)
+dev.off()
+#Separate out p-values
+pvals<-na.omit(gwasresults$P)
+#Calculating genomic inflation factor, lambda
+gc<- c()
+lod=qchisq(pvals, 1, lower.tail = F)
+gc=median((lod), na.rm = T)/qchisq(0.5,1)
+gc
+
+#Read in Principal Component Analysis (PCA) results
+pca<- read.table("/drives/drive1/kidney/Jazmin/plink_data/chr.pca.eigenvec", header=F)
+pca<- pca %>% rename(FID=V1, IID=V2, PC1=V3, PC2=V4, PC3=V5)
+
+#Create 2D scatter plot PC1 vs PC2 vs PC3
+ggplot(pca, aes(x=PC1, y=PC2, z=PC3)) +
+  geom_point(alpha=0.7, color="steelblue") +
+  labs(title="PCA Plot (PC1 vs PC2 vs PC3",
+       x= "Principal Component 1",
+       y= "Principal Component 2", 
+       z= "Principal Componenet 3") +
+  theme_minimal()
+
+#Create 3D scatter plot PC1 vs PC2
+library(plotly)
+png("/drives/drive1/kidney/Jazmin/plink_data/3D_PCA_Plot.png")
+plot_ly(pca, x=~PC1, y=~PC2, z=~PC3,
+        type='scatter3d', mode='markers',
+        marker=list(size=3, color=~PC3, colorscale='Rainbow')) %>% 
+  layout(title="3D PCA Scatter Plot")
+
+#Create covariate file
+chrpostqc<- fread("/drives/drive1/kidney/Jazmin/plink_data/chr.postQC.fam", header=F)
+chrpostqc<- chrpostqc %>% rename(SUBJECT_ID=V2)
+chrpheno<- merge(CKDCohort, chrpostqc, by="SUBJECT_ID")
+chrphenotypes.txt<- chrpheno %>% rename(IID=SUBJECT_ID, SEX= SEX.x, DECADE_BIRTH=DECADE_BIRTH.x, YEAR_BIRTH=YEAR_BIRTH.x)
+#Assign 0/1 variables so that PLINK treats as numerical values, not factoral, when doing covariate analysis 
+chrphenotypes.txt<- chrphenotypes.txt %>% mutate(
+    Sex=case_when(
+    SEX=="C46109" ~ 0, #Male
+    SEX=="C46110" ~ 1 #Female)) 
+#Create Age covariate by subtracting year of birth from current year
+chrphenotypes.txt<- chrphenotypes.txt %>% mutate(Age=2025-YEAR_BIRTH)
+#Assign FID values 0
+chrphenotypes.txt$FID=0
+#Merge with PCA dataset
+chrphenotypes.txt<- merge(pca, chrphenotypes.txt, by="IID")
+chrphenotypes.txt<- chrphenotypes.txt %>% rename(FID=FID.x)
+chrphenotypes.txt<- chrphenotypes.txt %>% select(FID, IID, Sex, Age, PC1, PC2, PC3)
+fwrite(chrphenotypes.txt, "/drives/drive1/kidney/Jazmin/plink_data/chrcovar.txt",sep="\t", col.names=T)
+
+#Plot covariate results
+gwascovar<- read.table("/drives/drive1/kidney/Jazmin/plink_data/chr.gwas.covar.assoc.logistic", header=T)
+gwascovar<- na.omit(gwascovar)
+#Filter to get additive genetic model of all covariates 
+gwascovar<- filter(gwascovar, TEST=="ADD")
+#Create a manhattan plot with covariates
+png("/drives/drive1/kidney/Jazmin/plink_data/GWAS_Covariates_ALL.png")
+manhattan(gwascovar, chr="CHR", bp="BP", snp="SNP", p="P", col=c("blue4", "hotpink1", "chartreuse1", "magenta2",  "red2", "lightblue4", "salmon4", "darkorange1", "cyan1", "tomato1", "seagreen", "darkorchid1", "yellow1", "dodgerblue3", "plum1", "deeppink", "firebrick4", "burlywood3", "azure4", "maroon", "cadetblue1", "olivedrab", "red4"))
+dev.off()
+#Create a manhattan plot with p-values included
+png("/drives/drive1/kidney/Jazmin/plink_data/GWAS_HispanicLatino_Covariates_ALL_Pval.png")
+manhattan(gwascovar, chr="CHR", bp="BP", snp="SNP", p="P", col=c("blue4", "hotpink1", "chartreuse1", "magenta2",  "red2", "lightblue4", "salmon4", "darkorange1", "cyan1", "tomato1", "seagreen", "darkorchid1", "yellow1", "dodgerblue3", "plum1", "deeppink", "firebrick4", "burlywood3", "azure4", "maroon", "cadetblue1", "olivedrab", "red4"), annotatePval = 0.01)
+dev.off()
+
+#Create a QQ plot of the GWAS results
+png("/drives/drive1/kidney/Jazmin/plink_data/QQPlot_GWAS_Covariates_ALL.png")
+qq(gwascovar$P)
+dev.off()
+
+#Separate out pvalues
+pvals<-na.omit(gwascovar$P)
+#Calculating genomic inflation factor, lambda
+gc<- c()
+lod=qchisq(pvals, 1, lower.tail = F)
+gc=median((lod), na.rm = T)/qchisq(0.5,1)
+gc
+
+#Calculate polygenic risk scores by creating a scoring file that has SNP-level weights and save to PLINK readable text file
+chrgwas$logOR=log(chrgwas$OR)
+prsfile<- chrgwas %>% select(SNP, A1, logOR)
+fwrite(prsfile, "/drives/drive1/kidney/Jazmin/plink_data/prsfile.txt",sep="\t", col.names=F)
+
+#Read in polygenic risk score data
+prsdata<- read.table("/drives/drive1/kidney/Jazmin/plink_data/chr.prs.profile", sep ="", header=T)
+prsdata<- prsdata %>% rename(SUBJECT_ID=IID)
+prsdata<- merge(CKDCohort, prsdata, by="SUBJECT_ID")
+prsdata<- prsdata %>% mutate(Phenotype=case_when(
+    CASE_CONTROL_CKD=="C99270" ~ 1,
+    CASE_CONTROL_CKD=="C99269" ~ 2
+  ))
+prsdata<- prsdata %>% mutate(
+    SEX.x=case_when(
+    SEX.x=="C46109" ~ 0,
+    SEX.x=="C46110" ~ 1))
+prsdata$CASE_CONTROL_CKD <- 0
+prsdata<- prsdata %>% select(SUBJECT_ID, CASE_CONTROL_CKD, Phenotype, YEAR_BIRTH.x, SEX.x, SCORE)
+prsdata<- prsdata%>% rename(FID=CASE_CONTROL_CKD, IID=SUBJECT_ID, YEAR_BIRTH=YEAR_BIRTH.x, SEX=SEX.x)
+#Transform into factorial to plot
+prsdata$Phenotype<- factor(prsdata$Phenotype, levels=c(1,2), labels=c("Control", "Case"))
+Plot Polygenic Risk Scores 
+png("/drives/drive1/kidney/Jazmin/plink_data/PRS.png")
+ggplot(prsdata, aes(x=SCORE, fill=Phenotype)) + 
+  geom_density(alpha=0.5) + 
+  labs(title="PRS Distribution by Phenotype", 
+       x= "Polygenic Risk Score", 
+       y="Density", fill="Phenotype") +
+  scale_fill_manual(values=c("Control" ="#56B4E9", "Case" ="#D55E00"))
+   theme_minimal()
+dev.off()
+#Calculate T-test between case and control groups
+ttest<- t.test(SCORE~Phenotype, data=prsdata)
+print(ttest)
+

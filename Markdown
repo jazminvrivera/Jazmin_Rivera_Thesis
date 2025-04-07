@@ -10,7 +10,7 @@ library(qqman)
 library(tidyr)
 library(ggrepel)
 
-#set working directory to repository where orginial retrieved data was placed
+#Set working directory to repository where orginial retrieved data was placed
 setwd("/drives/drive1/kidney/Data_repository/")
 
 #CaseControls

@@ -281,7 +281,7 @@ png("/drives/drive1/kidney/Jazmin/plink_data/GWAS_HispanicLatino_Covariates_ALL_
 manhattan(gwascovar, chr="CHR", bp="BP", snp="SNP", p="P", col=c("blue4", "hotpink1", "chartreuse1", "magenta2",  "red2", "lightblue4", "salmon4", "darkorange1", "cyan1", "tomato1", "seagreen", "darkorchid1", "yellow1", "dodgerblue3", "plum1", "deeppink", "firebrick4", "burlywood3", "azure4", "maroon", "cadetblue1", "olivedrab", "red4"), annotatePval = 0.01)
 dev.off()
 
-#Create a QQ plot of the GWAS results
+#Create a QQ plot of the GWAS Covariate results
 png("/drives/drive1/kidney/Jazmin/plink_data/QQPlot_GWAS_Covariates_ALL.png")
 qq(gwascovar$P)
 dev.off()

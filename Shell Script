@@ -45,7 +45,7 @@ plink --bfile /drives/drive1/kidney/Jazmin/plink_data/chr${i}nobi --keep /drives
 echo ${i}  
 done
 
-#Create a merge list text file of chromosomes 2-22 w their respective trio of files 
+#Create a merge list text file of chromosomes 2-22 with their respective trio of files 
 for i in {2..22}; do 
 echo "chr${i}nb.bed chr${i}nb.bim chr${i}nb.fam"
 done > merge-list.txt

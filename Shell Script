@@ -77,7 +77,7 @@ plink --bfile /drives/drive1/kidney/Jazmin/plink_data/chr.completeSNPSandppl.maf
 #Keep variants with a heterozygosity rate greater than or equal to 0.25 from text file created in Markdown (lines 180-189)
 plink --bfile /drives/drive1/kidney/Jazmin/plink_data/chr.completeSNPSandppl.maf01 --keep /drives/drive1/kidney/Jazmin/plink_data/chr.het25.samples --make-bed --out /drives/drive1/kidney/Jazmin/plink_data/chr.posthr
 
-#Calculate Hardy Weinberg for variants with a p-value > 1e-6
+#Using a phenotype file created in Markdown (lines (191-203), calculate Hardy Weinberg for variants with a p-value > 1e-6
 plink --bfile /drives/drive1/kidney/Jazmin/plink_data/chr.posthr --pheno /drives/drive1/kidney/Jazmin/plink_data/chrphenotypes.txt --hwe 1e-6 --make-bed --out /drives/drive1/kidney/Jazmin/plink_data/chr.postQC
 
 #Using a phenotype file created in Markdown (lines (191-203) complete a basic association test disregarding sex

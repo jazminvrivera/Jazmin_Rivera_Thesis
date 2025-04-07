@@ -316,7 +316,7 @@ prsdata<- prsdata %>% select(SUBJECT_ID, CASE_CONTROL_CKD, Phenotype, YEAR_BIRTH
 prsdata<- prsdata%>% rename(FID=CASE_CONTROL_CKD, IID=SUBJECT_ID, YEAR_BIRTH=YEAR_BIRTH.x, SEX=SEX.x)
 #Transform into factorial to plot
 prsdata$Phenotype<- factor(prsdata$Phenotype, levels=c(1,2), labels=c("Control", "Case"))
-Plot Polygenic Risk Scores 
+#Plot Polygenic Risk Scores 
 png("/drives/drive1/kidney/Jazmin/plink_data/PRS.png")
 ggplot(prsdata, aes(x=SCORE, fill=Phenotype)) + 
   geom_density(alpha=0.5) + 

@@ -1,3 +1,4 @@
+#Load libraries
 library(tidyverse)
 library(ggplot2)
 library(lattice)
@@ -9,6 +10,9 @@ library(data.table)
 library(qqman)
 library(tidyr)
 library(ggrepel)
+library(VariantAnnotation)
+library(GenomicRanges)
+library(TxDb.Hsapiens.UCSC.hg38.knownGene)
 
 #Set working directory to repository where orginial retrieved data was placed
 setwd("/drives/drive1/kidney/Data_repository/")
@@ -330,3 +334,20 @@ dev.off()
 ttest<- t.test(SCORE~Phenotype, data=prsdata)
 print(ttest)
 
+#Find overlaps between SNPs identified and those identified in previous research 
+#Read in post gwas data
+chrgwas1<- fread("/drives/drivel/kidney/Jazmin/plink_data/chr.postgwas.assoc", header=T)
+#Add 1 BP to SNP
+chrgwas1$end=((chrgwas1$BP)+1)
+
+#Make G-Ranges vector
+range <- GRanges (seqnames = chrgwas1$ab, ranges=IRanges(start=chrgwas1$BP, end=chrgwas1$end))
+#Make annotated vector using UCSC annotation package: TxDb.Hsapiens.UCSC.hg19.knownGene
+annots <- locateVariants(range, TxDb.Hsapiens.UCSC.hg19.knownGene, AllVariants())
+#Save as data frame
+anot <- <-as.data.frame(annots)
+anot$SNP <- gsub("chr", ":", anot$SNP)
+#Select information for 3 SNPs of interest
+range8 <- GRanges (seqnames =c("chr8", "chr10", "chr20"), ranges=IRanges(start=((c(128629807, 7144174, 12632735)-10000)), end=((c(128629807, 7144174, 12632735)+10000))
+#Make annotation for the 3 SNPs
+annots2 <- locateVariants(range8, TxDb.Hsapiens.UCSC.hg19.knownGene, AllVariants())
